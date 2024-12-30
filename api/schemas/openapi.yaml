@@ -1,0 +1,104 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: SDAI calculator API server
+paths:
+  /calculate:
+    post:
+      operationId: Calculate
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CalculateRequest"
+      responses:
+        '200':
+          $ref: '#/components/responses/CalculateResponse'
+        '400':
+          $ref: '#/components/responses/CalculateErrorResponse'
+
+components:
+  schemas:
+    CalculateRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - painful_joints
+        - swollen_joints
+        - physician_activity_assessment
+        - patient_activity_assessment
+        - crp
+      properties:
+        painful_joints:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 28
+        swollen_joints:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 28
+        physician_activity_assessment:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100
+        patient_activity_assessment:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 100
+        crp:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 100
+          example: 1.2
+          description: C-reactive protein in mg/dl
+
+    Error:
+      type: object
+      additionalProperties: false
+      required:
+        - message
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+  responses:
+    CalculateErrorResponse:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    CalculateResponse:
+      description: Success
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+              - sdai_index
+            properties:
+              sdai_index:
+                type: number
+                format: double
+                description: Calculated SDAI index
+
+  parameters:
+    IdempotencyToken:
+      name: X-Idempotency-Token
+      in: header
+      required: true
+      example: "6263759d-261b-499f-8699-77f07ca825fa"
+      schema:
+        type: string
