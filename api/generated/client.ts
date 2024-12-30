@@ -9,20 +9,30 @@ import type {
   AxiosRequestConfig,
   AxiosResponse
 } from 'axios'
+/**
+ * Success
+ */
+export type GetHistoryResponseResponse = SDAIRecord[];
+
 export type CalculateResponseResponse = {
   /** Calculated SDAI index */
   sdai_index: number;
 };
 
-export interface Error {
-  code?: string;
-  message: string;
-}
-
 /**
  * Error
  */
 export type CalculateErrorResponseResponse = Error;
+
+export interface SDAIRecord {
+  measure_datetime: string;
+  sdai_index: number;
+}
+
+export interface Error {
+  code?: string;
+  message: string;
+}
 
 export interface CalculateRequest {
   /**
@@ -31,6 +41,8 @@ export interface CalculateRequest {
    * @maximum 100
    */
   crp: number;
+  /** Measure date and time */
+  measure_datetime: string;
   /**
    * @minimum 0
    * @maximum 28
@@ -67,5 +79,14 @@ const calculate = <TData = AxiosResponse<CalculateResponseResponse>>(
     );
   }
 
-return {calculate}};
+const getHistory = <TData = AxiosResponse<GetHistoryResponseResponse>>(
+     options?: AxiosRequestConfig
+ ): Promise<TData> => {
+    return axios.get(
+      `http://localhost:8080/history`,options
+    );
+  }
+
+return {calculate,getHistory}};
 export type CalculateResult = AxiosResponse<CalculateResponseResponse>
+export type GetHistoryResult = AxiosResponse<GetHistoryResponseResponse>

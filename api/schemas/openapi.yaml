@@ -20,6 +20,13 @@ paths:
         '400':
           $ref: '#/components/responses/CalculateErrorResponse'
 
+  /history:
+    get:
+      operationId: GetHistory
+      responses:
+        '200':
+          $ref: '#/components/responses/GetHistoryResponse'
+
 components:
   schemas:
     CalculateRequest:
@@ -31,6 +38,7 @@ components:
         - physician_activity_assessment
         - patient_activity_assessment
         - crp
+        - measure_datetime
       properties:
         painful_joints:
           type: integer
@@ -59,6 +67,11 @@ components:
           maximum: 100
           example: 1.2
           description: C-reactive protein in mg/dl
+        measure_datetime:
+          type: string
+          format: date-time
+          description: Measure date and time
+          example: "2021-01-30T08:30:00Z"
 
     Error:
       type: object
@@ -70,6 +83,20 @@ components:
           type: string
         message:
           type: string
+
+    SDAIRecord:
+      type: object
+      additionalProperties: false
+      required:
+        - sdai_index
+        - measure_datetime
+      properties:
+        sdai_index:
+          type: number
+          format: double
+        measure_datetime:
+          type: string
+          format: date-time
 
   responses:
     CalculateErrorResponse:
@@ -93,6 +120,16 @@ components:
                 type: number
                 format: double
                 description: Calculated SDAI index
+
+    # todo: pagination: limit offset, cursor?
+    GetHistoryResponse:
+      description: Success
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/SDAIRecord'
 
   parameters:
     IdempotencyToken:
