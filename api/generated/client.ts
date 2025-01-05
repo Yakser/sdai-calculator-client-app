@@ -9,15 +9,19 @@ import type {
   AxiosRequestConfig,
   AxiosResponse
 } from 'axios'
-/**
- * Success
- */
-export type GetHistoryResponseResponse = SDAIRecord[];
+export type GetHistoryResponseResponse = {
+  history: SDAIRecord[];
+};
 
 export type CalculateResponseResponse = {
   /** Calculated SDAI index */
   sdai_index: number;
 };
+
+/**
+ * Error
+ */
+export type GetHistoryErrorResponseResponse = Error;
 
 /**
  * Error

@@ -4,12 +4,9 @@ import {TextInput, Button, HelperText, Text, Portal, ActivityIndicator, Snackbar
 import {DatePickerModal, registerTranslation} from 'react-native-paper-dates';
 import {LineChart} from 'react-native-chart-kit';
 import {getSDAICalculatorAPIServer, CalculateRequest} from '@/api/generated/client';
-import {v4 as uuidv4} from 'uuid';
-import {PanGestureHandler} from "react-native-gesture-handler";
 
-const TABS_HEIGHT = 60;
+const TABS_HEIGHT = 83;
 
-// Регистрируем русскую локализацию
 registerTranslation('ru', {
     close: "Закрыть",
     dateIsDisabled: "Дата недоступна",
@@ -52,12 +49,16 @@ const App: React.FC = () => {
         setSnackbarVisible(true);
     };
 
-    const [tenderJoints, setTenderJoints] = useState<string>('');
-    const [swollenJoints, setSwollenJoints] = useState<string>('');
-    const [physicianAssessment, setPhysicianAssessment] = useState<string>('');
-    const [patientAssessment, setPatientAssessment] = useState<string>('');
-    const [crp, setCrp] = useState<string>('');
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const isDevelopment = __DEV__;
+    const [tenderJoints, setTenderJoints] = useState<string>(isDevelopment ? '5' : '');
+    const [swollenJoints, setSwollenJoints] = useState<string>(isDevelopment ? '3' : '');
+    const [physicianAssessment, setPhysicianAssessment] = useState<string>(isDevelopment ? '50' : '');
+    const [patientAssessment, setPatientAssessment] = useState<string>(isDevelopment ? '40' : '');
+    const [crp, setCrp] = useState<string>(isDevelopment ? '3.5' : '');
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+        isDevelopment ? new Date() : undefined
+    );
+
     const [dataHistory, setDataHistory] = useState<{ date: string; sdai: number }[]>([]);
     const [sdai, setSdai] = useState<number | null>(null);
     const [interpretation, setInterpretation] = useState<string>('');
@@ -119,20 +120,12 @@ const App: React.FC = () => {
         };
 
         try {
-            // todo: можно убрать
-
-            const idempotencyToken = uuidv4();
-            const response = await api.calculate(calculateRequest, {
-                headers: {
-                    'X-Idempotency-Token': idempotencyToken,
-                },
-            });
+            const response = await api.calculate(calculateRequest);
 
             const calculatedSDAI = response.data.sdai_index;
 
             setSdai(calculatedSDAI);
 
-            // Интерпретация результата
             let activeness = '';
             if (calculatedSDAI < 3.3) {
                 activeness = 'Ремиссия';
@@ -148,6 +141,7 @@ const App: React.FC = () => {
             const formattedDate = selectedDate ? selectedDate.toISOString().split('T')[0] : '';
             setDataHistory([...dataHistory, {date: formattedDate, sdai: calculatedSDAI}]);
         } catch (error: any) {
+            console.error(error)
             if (error.response && error.response.data) {
                 const apiError = error.response.data as { message: string };
                 showSnackbar(apiError.message || 'Произошла ошибка на сервере');
@@ -260,7 +254,11 @@ const App: React.FC = () => {
                         mode="contained"
                         onPress={calculateSDAI}
                         disabled={isCalculateDisabled}
-                        style={styles.calculateButton}
+                        style={[
+                            styles.calculateButton,
+                            isCalculateDisabled && styles.disabledButton,
+                        ]}
+                        labelStyle={styles.buttonText}
                     >
                         {loading ? <ActivityIndicator animating={true} size="small" color="#fff"/> : 'Рассчитать'}
                     </Button>
@@ -279,38 +277,66 @@ const App: React.FC = () => {
                 {dataHistory.length > 0 && (
                     <LineChart
                         data={{
-                            labels: dataHistory.map((entry) => entry.date),
-                            datasets: [{data: dataHistory.map((entry) => entry.sdai), strokeWidth: 2}],
+                            labels: dataHistory.map((entry, index) =>
+                                index % 2 === 0
+                                    ? new Date(entry.date).toLocaleDateString('ru-RU', {
+                                        day: '2-digit',
+                                        month: '2-digit',
+                                    })
+                                    : ''
+                            ),
+                            datasets: [
+                                {
+                                    data: dataHistory.map((entry) => entry.sdai),
+                                    strokeWidth: 2,
+                                },
+                            ],
                         }}
                         width={Dimensions.get('window').width - 40}
                         height={220}
                         chartConfig={{
-                            backgroundColor: '#e8e8e8',
-                            backgroundGradientFrom: '#fff',
-                            backgroundGradientTo: '#fff',
+                            backgroundColor: '#f0f8ff',
+                            backgroundGradientFrom: '#87CEEB',
+                            backgroundGradientTo: '#4682B4',
                             decimalPlaces: 1,
-                            color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                            labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                            color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                            labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                            style: {
+                                borderRadius: 10,
+                            },
+                            propsForDots: {
+                                r: '5',
+                                strokeWidth: '2',
+                                stroke: '#4682B4',
+                            },
+                            propsForLabels: {
+                                fontSize: 10,
+                            },
                         }}
+                        style={{
+                            marginVertical: 10,
+                            borderRadius: 10,
+                        }}
+                        withInnerLines={false}
+                        withOuterLines={false}
+                        withVerticalLines={false}
                         bezier
-                        style={styles.chart}
                     />
                 )}
             </ScrollView>
 
             <Portal>
                 <DatePickerModal
-                    locale="ru" // Локализация (русский язык)
-                    mode="single" // Режим: выбор одной даты
+                    locale="ru"
+                    mode="single"
                     visible={showDatePicker}
                     onDismiss={() => setShowDatePicker(false)}
-                    date={selectedDate} // Текущая выбранная дата
+                    date={selectedDate}
                     onConfirm={(params) => {
-                        // Проверяем, что возвращен объект с ключом `date`
                         if (params.date) {
-                            setSelectedDate(params.date); // Сохраняем выбранную дату в состояние
+                            setSelectedDate(params.date);
                         }
-                        setShowDatePicker(false); // Закрываем модальное окно
+                        setShowDatePicker(false);
                     }}
                 />
             </Portal>
@@ -325,7 +351,7 @@ const App: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-    safeArea: {flex: 1, backgroundColor: '#FFF'},
+    safeArea: {flex: 1, backgroundColor: '#FFF', marginBottom: TABS_HEIGHT},
     container: {flexGrow: 1, paddingHorizontal: 20, paddingVertical: 20},
     title: {fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20},
     input: {marginBottom: 10},
@@ -340,6 +366,12 @@ const styles = StyleSheet.create({
         position: 'absolute',
         // left: 10,
         // right: 10,
+    },
+    disabledButton: {
+        opacity: 0.5,
+    },
+    buttonText: {
+        color: '#FFF',
     },
 });
 
