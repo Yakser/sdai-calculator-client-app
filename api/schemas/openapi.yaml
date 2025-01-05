@@ -6,8 +6,6 @@ paths:
   /calculate:
     post:
       operationId: Calculate
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyToken'
       requestBody:
         required: true
         content:
@@ -26,6 +24,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/GetHistoryResponse'
+        '400':
+          $ref: '#/components/responses/GetHistoryErrorResponse'
 
 components:
   schemas:
@@ -106,6 +106,13 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
 
+    GetHistoryErrorResponse:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
     CalculateResponse:
       description: Success
       content:
@@ -127,9 +134,15 @@ components:
       content:
         application/json:
           schema:
-            type: array
-            items:
-              $ref: '#/components/schemas/SDAIRecord'
+            type: object
+            additionalProperties: false
+            required:
+              - history
+            properties:
+              history:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SDAIRecord'
 
   parameters:
     IdempotencyToken:

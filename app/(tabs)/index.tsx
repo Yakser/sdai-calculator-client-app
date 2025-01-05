@@ -119,7 +119,9 @@ const App: React.FC = () => {
         };
 
         try {
-            const idempotencyToken = uuidv4(); // Генерация уникального токена
+            // todo: можно убрать
+
+            const idempotencyToken = uuidv4();
             const response = await api.calculate(calculateRequest, {
                 headers: {
                     'X-Idempotency-Token': idempotencyToken,
