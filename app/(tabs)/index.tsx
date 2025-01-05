@@ -1,8 +1,7 @@
 import React, {useState} from 'react';
 import {StyleSheet, View, ScrollView, SafeAreaView, Dimensions, Alert} from 'react-native';
-import {TextInput, Button, HelperText, Text, Portal, ActivityIndicator, Snackbar} from 'react-native-paper';
+import {TextInput, Button, HelperText, Text, Portal, ActivityIndicator, Snackbar, IconButton} from 'react-native-paper';
 import {DatePickerModal, registerTranslation} from 'react-native-paper-dates';
-import {LineChart} from 'react-native-chart-kit';
 import {getSDAICalculatorAPIServer, CalculateRequest} from '@/api/generated/client';
 
 const TABS_HEIGHT = 83;
@@ -31,13 +30,10 @@ registerTranslation('ru', {
     typeInDate: "Введите дату",
     save: 'Сохранить',
     selectSingle: 'Выбор даты',
-    // today: 'Сегодня',
     selectRange: 'Выбрать период',
-    // startDate: 'Начало периода',
-    // endDate: 'Конец периода',
 });
 
-const App: React.FC = () => {
+const HomeScreen: React.FC = () => {
     const api = getSDAICalculatorAPIServer();
     const [loading, setLoading] = useState<boolean>(false);
 
@@ -59,7 +55,6 @@ const App: React.FC = () => {
         isDevelopment ? new Date() : undefined
     );
 
-    const [dataHistory, setDataHistory] = useState<{ date: string; sdai: number }[]>([]);
     const [sdai, setSdai] = useState<number | null>(null);
     const [interpretation, setInterpretation] = useState<string>('');
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -108,14 +103,12 @@ const App: React.FC = () => {
 
         setLoading(true);
 
-        // Формируем запрос к API
         const calculateRequest: CalculateRequest = {
             crp: Number(crp),
             painful_joints: Number(tenderJoints),
             swollen_joints: Number(swollenJoints),
             patient_activity_assessment: Number(patientAssessment),
             physician_activity_assessment: Number(physicianAssessment),
-            // Приводим дату к ISO формату
             measure_datetime: selectedDate!.toISOString(),
         };
 
@@ -137,9 +130,6 @@ const App: React.FC = () => {
                 activeness = 'Высокая активность заболевания';
             }
             setInterpretation(activeness);
-
-            const formattedDate = selectedDate ? selectedDate.toISOString().split('T')[0] : '';
-            setDataHistory([...dataHistory, {date: formattedDate, sdai: calculatedSDAI}]);
         } catch (error: any) {
             console.error(error)
             if (error.response && error.response.data) {
@@ -157,11 +147,13 @@ const App: React.FC = () => {
         setSnackbarVisible(false);
     };
 
-    const gestureHandler = (event: any) => {
-        if (event.nativeEvent.translationY < -50) {
-            hideSnackbar(); // Скрыть Snackbar при движении вверх
-        }
-    };
+    const formatDate = (date: Date): string => {
+        return new Intl.DateTimeFormat('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        }).format(date)
+    }
 
     const isCalculateDisabled =
         !tenderJoints || !swollenJoints || !physicianAssessment || !patientAssessment || !crp || !selectedDate;
@@ -169,7 +161,7 @@ const App: React.FC = () => {
     return (
         <SafeAreaView style={styles.safeArea}>
             <ScrollView contentContainerStyle={styles.container}>
-                <Text style={styles.title}>Индекс SDAI</Text>
+                <Text style={styles.title}>Расчёт SDAI</Text>
 
                 <TextInput
                     mode="outlined"
@@ -236,15 +228,23 @@ const App: React.FC = () => {
                     {errors.crp}
                 </HelperText>
 
-                <Button mode="outlined" onPress={() => setShowDatePicker(true)} style={styles.dateButton}>
-                    {selectedDate
-                        ? new Intl.DateTimeFormat('ru-RU', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                        }).format(selectedDate)
-                        : 'Выберите дату'}
+                <Button
+                    mode="outlined"
+                    style={styles.dateButton}
+                    onPress={() => setShowDatePicker(true)}
+                >
+                    <View style={styles.row}>
+                        <Text style={styles.dateText}>
+                            {selectedDate ? `Дата измерения: ${formatDate(selectedDate)}` : 'Выберите дату'}
+                        </Text>
+                        <IconButton
+                            icon="calendar"
+                            size={20}
+                            style={{ margin: 0 }}
+                        />
+                    </View>
                 </Button>
+
                 <HelperText type="error" visible={!!errors.date}>
                     {errors.date}
                 </HelperText>
@@ -272,56 +272,6 @@ const App: React.FC = () => {
                         <Text style={styles.resultText}>Результат SDAI: {sdai.toFixed(1)}</Text>
                         <Text style={styles.resultText}>Активность: {interpretation}</Text>
                     </>
-                )}
-
-                {dataHistory.length > 0 && (
-                    <LineChart
-                        data={{
-                            labels: dataHistory.map((entry, index) =>
-                                index % 2 === 0
-                                    ? new Date(entry.date).toLocaleDateString('ru-RU', {
-                                        day: '2-digit',
-                                        month: '2-digit',
-                                    })
-                                    : ''
-                            ),
-                            datasets: [
-                                {
-                                    data: dataHistory.map((entry) => entry.sdai),
-                                    strokeWidth: 2,
-                                },
-                            ],
-                        }}
-                        width={Dimensions.get('window').width - 40}
-                        height={220}
-                        chartConfig={{
-                            backgroundColor: '#f0f8ff',
-                            backgroundGradientFrom: '#87CEEB',
-                            backgroundGradientTo: '#4682B4',
-                            decimalPlaces: 1,
-                            color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                            labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                            style: {
-                                borderRadius: 10,
-                            },
-                            propsForDots: {
-                                r: '5',
-                                strokeWidth: '2',
-                                stroke: '#4682B4',
-                            },
-                            propsForLabels: {
-                                fontSize: 10,
-                            },
-                        }}
-                        style={{
-                            marginVertical: 10,
-                            borderRadius: 10,
-                        }}
-                        withInnerLines={false}
-                        withOuterLines={false}
-                        withVerticalLines={false}
-                        bezier
-                    />
                 )}
             </ScrollView>
 
@@ -359,13 +309,10 @@ const styles = StyleSheet.create({
     calculateButton: {flex: 0.48, backgroundColor: '#5885DC'},
     clearButton: {flex: 0.48, backgroundColor: '#BB2649'},
     resultText: {fontSize: 18, fontWeight: 'bold', textAlign: 'center', marginTop: 20},
-    dateButton: {marginVertical: 10},
     chart: {marginVertical: 10, borderRadius: 10},
     snackbarWrapper: {
         top: 50,
         position: 'absolute',
-        // left: 10,
-        // right: 10,
     },
     disabledButton: {
         opacity: 0.5,
@@ -373,6 +320,19 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#FFF',
     },
+    dateButton: {
+        borderRadius: 5,
+        backgroundColor: '#f5f5f5',
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    dateText: {
+        fontSize: 16,
+        color: '#333',
+    },
 });
 
-export default App;
+export default HomeScreen;

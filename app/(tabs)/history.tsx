@@ -19,8 +19,8 @@ const ChartTab: React.FC = () => {
             setError(null);
             const response = await api.getHistory();
             setDataHistory(response.data.history.slice(-15));
-        } catch (error) {
-            console.error("Ошибка загрузки данных истории:", error);
+        } catch (err) {
+            console.error("Ошибка загрузки данных истории:", err);
             setError("Не удалось загрузить данные. Проверьте подключение.");
         } finally {
             setLoading(false);
@@ -33,90 +33,94 @@ const ChartTab: React.FC = () => {
         }, [])
     );
 
-    if (loading) {
-        return (
-            <View style={styles.contentContainer}>
-                <ActivityIndicator size="large" color="#4682B4" />
-            </View>
-        );
-    }
+    const renderContent = () => {
+        if (loading) {
+            // Отображение индикатора загрузки
+            return (
+                <View style={styles.contentContainer}>
+                    <ActivityIndicator size="large" color="#4682B4" />
+                </View>
+            );
+        }
 
-    if (error) {
-        return (
-            <View style={styles.contentContainer}>
-                <Text style={styles.errorText}>{error}</Text>
-                <Button mode="contained" onPress={loadHistory} style={styles.refreshButton}>
-                    Обновить данные
-                </Button>
-            </View>
-        );
-    }
+        if (error) {
+            // Отображение ошибки
+            return (
+                <View style={styles.contentContainer}>
+                    <Text style={styles.errorText}>{error}</Text>
+                </View>
+            );
+        }
 
-    if (dataHistory.length === 0) {
+        if (dataHistory.length === 0) {
+            // Отображение текста при отсутствии данных
+            return (
+                <View style={styles.contentContainer}>
+                    <Text>Нет доступных данных для графика.</Text>
+                </View>
+            );
+        }
+
+        // График
         return (
-            <View style={styles.contentContainer}>
-                <Text>Нет доступных данных для графика.</Text>
-                <Button mode="contained" onPress={loadHistory} style={styles.refreshButton}>
-                    Обновить данные
-                </Button>
-            </View>
+            <LineChart
+                data={{
+                    labels: dataHistory.map((entry, index) =>
+                        index % 2 === 0
+                            ? new Date(entry.measure_datetime).toLocaleDateString("ru-RU", {
+                                day: "2-digit",
+                                month: "2-digit",
+                            })
+                            : ""
+                    ),
+                    datasets: [
+                        {
+                            data: dataHistory.map((entry) => entry.sdai_index),
+                            strokeWidth: 2,
+                        },
+                    ],
+                }}
+                width={Dimensions.get("window").width - 40}
+                height={220}
+                chartConfig={{
+                    backgroundColor: "#f0f8ff",
+                    backgroundGradientFrom: "#87CEEB",
+                    backgroundGradientTo: "#4682B4",
+                    decimalPlaces: 1,
+                    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                    style: {
+                        borderRadius: 10,
+                    },
+                    propsForDots: {
+                        r: "3",
+                        strokeWidth: "1",
+                        stroke: "#4682B4",
+                    },
+                    propsForLabels: {
+                        fontSize: 10,
+                    },
+                }}
+                style={{
+                    marginVertical: 10,
+                    borderRadius: 10,
+                }}
+                withInnerLines={false}
+                withOuterLines={false}
+                withVerticalLines={false}
+                bezier
+            />
         );
-    }
+    };
 
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <Text style={styles.header}>История SDAI</Text>
-                <Button mode="outlined" onPress={loadHistory} style={styles.refreshButton}>
+                {renderContent()}
+                <Button mode="outlined" onPress={loadHistory} style={styles.refreshButton} disabled={loading}>
                     Обновить данные
                 </Button>
-                <LineChart
-                    data={{
-                        labels: dataHistory.map((entry, index) =>
-                            index % 2 === 0
-                                ? new Date(entry.measure_datetime).toLocaleDateString("ru-RU", {
-                                    day: "2-digit",
-                                    month: "2-digit",
-                                })
-                                : ""
-                        ),
-                        datasets: [
-                            {
-                                data: dataHistory.map((entry) => entry.sdai_index),
-                                strokeWidth: 2,
-                            },
-                        ],
-                    }}
-                    width={Dimensions.get("window").width - 40}
-                    height={220}
-                    chartConfig={{
-                        backgroundColor: "#f0f8ff",
-                        backgroundGradientFrom: "#87CEEB",
-                        backgroundGradientTo: "#4682B4",
-                        decimalPlaces: 1,
-                        color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                        labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                        style: {
-                            borderRadius: 10,
-                        },
-                        propsForDots: {
-                            r: "3",
-                            strokeWidth: "1",
-                            stroke: "#4682B4",
-                        },
-                        propsForLabels: {
-                            fontSize: 10,
-                        },
-                    }}
-                    style={{
-                        marginVertical: 10,
-                        borderRadius: 10,
-                    }}
-                    withInnerLines={false}
-                    withOuterLines={false}
-                    withVerticalLines={false}
-                    bezier
-                />
             </ScrollView>
         </SafeAreaView>
     );
@@ -134,8 +138,9 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         flex: 1,
-        justifyContent: "center",
+        // justifyContent: "center",
         alignItems: "center",
+        marginTop: 20,
     },
     header: {
         fontSize: 24,
