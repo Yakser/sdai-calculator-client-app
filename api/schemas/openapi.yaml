@@ -1,4 +1,4 @@
-openapi: "3.0.0"
+openapi: '3.0.0'
 info:
   version: 1.0.0
   title: SDAI calculator API server
@@ -6,23 +6,43 @@ paths:
   /calculate:
     post:
       operationId: Calculate
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyToken'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CalculateRequest"
+              $ref: '#/components/schemas/CalculateRequest'
       responses:
         '200':
           $ref: '#/components/responses/CalculateResponse'
         '400':
           $ref: '#/components/responses/CalculateErrorResponse'
 
+  /history:
+    get:
+      operationId: GetHistory
+      responses:
+        '200':
+          $ref: '#/components/responses/GetHistoryResponse'
+        '400':
+          $ref: '#/components/responses/GetHistoryErrorResponse'
+
 components:
   schemas:
     CalculateRequest:
+      type: object
+      required:
+        - parameters
+        - measure_datetime
+      properties:
+        parameters:
+          $ref: '#/components/schemas/CalculationParameters'
+        measure_datetime:
+          format: date-time
+          description: Measure date and time
+          example: '2021-01-30T08:30:00Z'
+
+    CalculationParameters:
       type: object
       additionalProperties: false
       required:
@@ -71,8 +91,31 @@ components:
         message:
           type: string
 
+    HistoryRecord:
+      type: object
+      required:
+        - sdai_index
+        - measure_datetime
+        - parameters
+      properties:
+        sdai_index:
+          type: number
+          format: double
+        measure_datetime:
+          type: string
+          format: date-time
+        parameters:
+          $ref: '#/components/schemas/CalculationParameters'
+
   responses:
     CalculateErrorResponse:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    GetHistoryErrorResponse:
       description: Error
       content:
         application/json:
@@ -94,11 +137,28 @@ components:
                 format: double
                 description: Calculated SDAI index
 
+    GetHistoryResponse:
+      description: Success
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required:
+              - history
+            properties:
+              history:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HistoryRecord'
+
   parameters:
     IdempotencyToken:
       name: X-Idempotency-Token
       in: header
       required: true
-      example: "6263759d-261b-499f-8699-77f07ca825fa"
+      example: '6263759d-261b-499f-8699-77f07ca825fa'
       schema:
         type: string
+
+#    todo: return calc data in history route

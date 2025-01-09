@@ -5,7 +5,6 @@ import { Platform } from 'react-native';
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { ThemeContext } from '../_layout';
-import BlurTabBarBackground from "@/components/ui/TabBarBackground.ios";
 
 export default function TabLayout() {
     const { isDarkTheme } = useContext(ThemeContext);
@@ -15,7 +14,6 @@ export default function TabLayout() {
             screenOptions={{
                 headerShown: false,
                 tabBarButton: HapticTab,
-                tabBarBackground: () => <BlurTabBarBackground />,
                 tabBarStyle: Platform.select({
                     ios: {
                         position: 'absolute',
@@ -35,6 +33,13 @@ export default function TabLayout() {
                 options={{
                     title: 'Главная',
                     tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+                }}
+            />
+            <Tabs.Screen
+                name="history"
+                options={{
+                    title: 'История',
+                    tabBarIcon: ({ color }) => <IconSymbol size={28} name="chart.dots.scatter" color={color} />,
                 }}
             />
         </Tabs>

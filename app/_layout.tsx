@@ -5,7 +5,8 @@ import {StatusBar} from 'expo-status-bar';
 import React, {useEffect, useState, createContext} from 'react';
 import 'react-native-reanimated';
 import {AppRegistry} from "react-native";
-import {PaperProvider,  DefaultTheme} from "react-native-paper";
+import {PaperProvider, DefaultTheme} from "react-native-paper";
+import {GestureHandlerRootView} from "react-native-gesture-handler";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -23,6 +24,8 @@ const theme = {
         ...DefaultTheme.colors,
         primary: '#5885DC',
         accent: '#BB2649',
+        background: '#fff',
+        surface: '#fff',
     },
 };
 
@@ -44,15 +47,18 @@ export default function RootLayout() {
     }
 
     return (
-        <PaperProvider theme={theme}>
-            <Stack>
-                <Stack.Screen name="(tabs)" options={{headerShown: false}}/>
-                <Stack.Screen name="+not-found"/>
-            </Stack>
-            <StatusBar
-                animated={true}
-            />
-        </PaperProvider>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+
+            <PaperProvider theme={theme}>
+                <Stack>
+                    <Stack.Screen name="(tabs)" options={{headerShown: false}}/>
+                    <Stack.Screen name="+not-found"/>
+                </Stack>
+                <StatusBar
+                    animated={true}
+                />
+            </PaperProvider>
+        </GestureHandlerRootView>
     );
 }
 

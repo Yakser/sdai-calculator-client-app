@@ -1,42 +1,74 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, SafeAreaView, Dimensions } from 'react-native';
-import { TextInput, Button, HelperText, Text, Portal } from 'react-native-paper';
-import { DatePickerModal, registerTranslation } from 'react-native-paper-dates';
-import { LineChart } from 'react-native-chart-kit';
-import {RangeChange} from "react-native-paper-dates/lib/typescript/Date/Calendar";
+import React, {useState} from 'react';
+import {StyleSheet, View, ScrollView, SafeAreaView, Dimensions, Alert} from 'react-native';
+import {TextInput, Button, HelperText, Text, Portal, ActivityIndicator, Snackbar, IconButton} from 'react-native-paper';
+import {DatePickerModal, registerTranslation} from 'react-native-paper-dates';
+import {getSDAICalculatorAPIServer, CalculateRequest} from '@/api/generated/client';
 
-// Регистрируем русскую локализацию
+const TABS_HEIGHT = 83;
+
 registerTranslation('ru', {
-    close: "", dateIsDisabled: "", hour: "", minute: "", mustBeBetween(startDate: string, endDate: string): string {
-        return "";
-    }, mustBeHigherThan(date: string): string {
-        return "";
-    }, mustBeLowerThan(date: string): string {
-        return "";
-    }, next: "", notAccordingToDateFormat(inputFormat: string): string {
-        return "";
-    }, pickDateFromCalendar: "", previous: "", selectMultiple: "", typeInDate: "",
+    close: "Закрыть",
+    dateIsDisabled: "Дата недоступна",
+    hour: "Час",
+    minute: "Минута",
+    mustBeBetween(startDate: string, endDate: string): string {
+        return `Дата должна быть между ${startDate} и ${endDate}`;
+    },
+    mustBeHigherThan(date: string): string {
+        return `Дата должна быть после ${date}`;
+    },
+    mustBeLowerThan(date: string): string {
+        return `Дата должна быть до ${date}`;
+    },
+    next: "Следующий",
+    notAccordingToDateFormat(inputFormat: string): string {
+        return `Неправильный формат даты. Ожидается: ${inputFormat}`;
+    },
+    pickDateFromCalendar: "Выберите дату из календаря",
+    previous: "Предыдущий",
+    selectMultiple: "Выберите несколько дат",
+    typeInDate: "Введите дату",
     save: 'Сохранить',
     selectSingle: 'Выбор даты',
-    // cancel: 'Отменить',
-    // today: 'Сегодня',
-    selectRange: 'Выбрать период'
-    // startDate: 'Начальная дата',
-    // endDate: 'Конечная дата',
+    selectRange: 'Выбрать период',
 });
 
-const App: React.FC = () => {
-    const [tenderJoints, setTenderJoints] = useState<string>('');
-    const [swollenJoints, setSwollenJoints] = useState<string>('');
-    const [physicianAssessment, setPhysicianAssessment] = useState<string>('');
-    const [patientAssessment, setPatientAssessment] = useState<string>('');
-    const [crp, setCrp] = useState<string>('');
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined); // Используем undefined для совместимости
-    const [dataHistory, setDataHistory] = useState<{ date: string; sdai: number }[]>([]);
+const HomeScreen: React.FC = () => {
+    const api = getSDAICalculatorAPIServer();
+    const [loading, setLoading] = useState<boolean>(false);
+
+    const [snackbarVisible, setSnackbarVisible] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string>('');
+
+    const showSnackbar = (message: string) => {
+        setErrorMessage(message);
+        setSnackbarVisible(true);
+    };
+
+    const isDevelopment = __DEV__;
+    const [tenderJoints, setTenderJoints] = useState<string>(isDevelopment ? '5' : '');
+    const [swollenJoints, setSwollenJoints] = useState<string>(isDevelopment ? '3' : '');
+    const [physicianAssessment, setPhysicianAssessment] = useState<string>(isDevelopment ? '50' : '');
+    const [patientAssessment, setPatientAssessment] = useState<string>(isDevelopment ? '40' : '');
+    const [crp, setCrp] = useState<string>(isDevelopment ? '3.5' : '');
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+
     const [sdai, setSdai] = useState<number | null>(null);
     const [interpretation, setInterpretation] = useState<string>('');
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [showDatePicker, setShowDatePicker] = useState(false);
+
+    const clearFields = () => {
+        setTenderJoints('');
+        setSwollenJoints('');
+        setPhysicianAssessment('');
+        setPatientAssessment('');
+        setCrp('');
+        setSdai(null);
+        setInterpretation('');
+        setErrors({});
+        setSelectedDate(new Date());
+    };
 
     const validateInput = () => {
         const newErrors: Record<string, string> = {};
@@ -64,55 +96,63 @@ const App: React.FC = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const calculateSDAI = () => {
+    const calculateSDAI = async () => {
         if (!validateInput()) return;
 
-        const calculatedSDAI =
-            Number(tenderJoints) +
-            Number(swollenJoints) +
-            Number(physicianAssessment) / 10 +
-            Number(patientAssessment) / 10 +
-            Number(crp);
+        setLoading(true);
 
-        setSdai(calculatedSDAI);
+        const calculateRequest: CalculateRequest = {
+            parameters: {
+                crp: Number(crp),
+                painful_joints: Number(tenderJoints),
+                swollen_joints: Number(swollenJoints),
+                patient_activity_assessment: Number(patientAssessment),
+                physician_activity_assessment: Number(physicianAssessment),
+            },
+            measure_datetime: selectedDate!.toISOString(),
+        };
 
-        let activeness = '';
-        if (calculatedSDAI < 3.3) {
-            activeness = 'Ремиссия';
-        } else if (calculatedSDAI <= 11) {
-            activeness = 'Низкая активность заболевания';
-        } else if (calculatedSDAI <= 26) {
-            activeness = 'Умеренная активность заболевания';
-        } else {
-            activeness = 'Высокая активность заболевания';
+        try {
+            const response = await api.calculate(calculateRequest);
+            const calculatedSDAI = response.data.sdai_index;
+
+            setSdai(calculatedSDAI);
+
+            let activeness = '';
+            if (calculatedSDAI < 3.3) {
+                activeness = 'Ремиссия';
+            } else if (calculatedSDAI <= 11) {
+                activeness = 'Низкая активность заболевания';
+            } else if (calculatedSDAI <= 26) {
+                activeness = 'Умеренная активность заболевания';
+            } else {
+                activeness = 'Высокая активность заболевания';
+            }
+            setInterpretation(activeness);
+        } catch (error: any) {
+            console.error(error)
+            if (error.response && error.response.data) {
+                const apiError = error.response.data as { message: string };
+                showSnackbar(apiError.message || 'Произошла ошибка на сервере');
+            } else {
+                showSnackbar('Не удалось связаться с сервером. Проверьте подключение.');
+            }
+        } finally {
+            setLoading(false);
         }
-        setInterpretation(activeness);
-
-        // Сохраняем данные в историю
-        const formattedDate = selectedDate ? selectedDate.toISOString().split('T')[0] : '';
-        setDataHistory([...dataHistory, { date: formattedDate, sdai: calculatedSDAI }]);
     };
 
-    const clearFields = () => {
-        setTenderJoints('');
-        setSwollenJoints('');
-        setPhysicianAssessment('');
-        setPatientAssessment('');
-        setCrp('');
-        setSdai(null);
-        setInterpretation('');
-        setErrors({});
-        setSelectedDate(undefined);
+    const hideSnackbar = () => {
+        setSnackbarVisible(false);
     };
 
-    const onDismissDate = () => {
-        setShowDatePicker(false);
-    };
-
-    const onConfirmDate: RangeChange = (params) => {
-        setShowDatePicker(false);
-        setSelectedDate(params.startDate);
-    };
+    const formatDate = (date: Date): string => {
+        return new Intl.DateTimeFormat('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        }).format(date)
+    }
 
     const isCalculateDisabled =
         !tenderJoints || !swollenJoints || !physicianAssessment || !patientAssessment || !crp || !selectedDate;
@@ -120,12 +160,11 @@ const App: React.FC = () => {
     return (
         <SafeAreaView style={styles.safeArea}>
             <ScrollView contentContainerStyle={styles.container}>
-                <Text style={styles.title}>Индекс SDAI</Text>
+                <Text style={styles.title}>Расчёт SDAI</Text>
 
                 <TextInput
                     mode="outlined"
                     label="Число болезненных суставов (от 0 до 28)"
-                    placeholder="Введите число болезненных суставов"
                     keyboardType="numeric"
                     value={tenderJoints}
                     onChangeText={setTenderJoints}
@@ -139,7 +178,6 @@ const App: React.FC = () => {
                 <TextInput
                     mode="outlined"
                     label="Число припухших суставов (от 0 до 28)"
-                    placeholder="Введите число припухших суставов"
                     keyboardType="numeric"
                     value={swollenJoints}
                     onChangeText={setSwollenJoints}
@@ -153,7 +191,6 @@ const App: React.FC = () => {
                 <TextInput
                     mode="outlined"
                     label="Оценка активности врачом (0-100)"
-                    placeholder="Введите оценку врача"
                     keyboardType="numeric"
                     value={physicianAssessment}
                     onChangeText={setPhysicianAssessment}
@@ -167,7 +204,6 @@ const App: React.FC = () => {
                 <TextInput
                     mode="outlined"
                     label="Оценка здоровья пациентом (0-100)"
-                    placeholder="Введите оценку пациента"
                     keyboardType="numeric"
                     value={patientAssessment}
                     onChangeText={setPatientAssessment}
@@ -181,7 +217,6 @@ const App: React.FC = () => {
                 <TextInput
                     mode="outlined"
                     label="Уровень СРБ (мг/дл)"
-                    placeholder="Введите уровень С-реактивного белка"
                     keyboardType="numeric"
                     value={crp}
                     onChangeText={setCrp}
@@ -192,9 +227,23 @@ const App: React.FC = () => {
                     {errors.crp}
                 </HelperText>
 
-                <Button mode="outlined" onPress={() => setShowDatePicker(true)} style={styles.dateButton}>
-                    {selectedDate ? `Дата: ${selectedDate.toISOString().split('T')[0]}` : 'Выберите дату'}
+                <Button
+                    mode="outlined"
+                    style={styles.dateButton}
+                    onPress={() => setShowDatePicker(true)}
+                >
+                    <View style={styles.row}>
+                        <Text style={styles.dateText}>
+                            {selectedDate ? `Дата измерения: ${formatDate(selectedDate)}` : 'Выберите дату'}
+                        </Text>
+                        <IconButton
+                            icon="calendar"
+                            size={20}
+                            style={{ margin: 0 }}
+                        />
+                    </View>
                 </Button>
+
                 <HelperText type="error" visible={!!errors.date}>
                     {errors.date}
                 </HelperText>
@@ -204,9 +253,13 @@ const App: React.FC = () => {
                         mode="contained"
                         onPress={calculateSDAI}
                         disabled={isCalculateDisabled}
-                        style={styles.calculateButton}
+                        style={[
+                            styles.calculateButton,
+                            isCalculateDisabled && styles.disabledButton,
+                        ]}
+                        labelStyle={styles.buttonText}
                     >
-                        Рассчитать
+                        {loading ? <ActivityIndicator animating={true} size="small" color="#fff"/> : 'Рассчитать'}
                     </Button>
                     <Button mode="contained" onPress={clearFields} style={styles.clearButton}>
                         Очистить
@@ -219,34 +272,6 @@ const App: React.FC = () => {
                         <Text style={styles.resultText}>Активность: {interpretation}</Text>
                     </>
                 )}
-
-                <Text style={styles.historyTitle}>История результатов</Text>
-                {dataHistory.length > 0 && (
-                    <LineChart
-                        data={{
-                            labels: dataHistory.map((entry) => entry.date),
-                            datasets: [
-                                {
-                                    data: dataHistory.map((entry) => entry.sdai),
-                                    strokeWidth: 2,
-                                },
-                            ],
-                        }}
-                        width={Dimensions.get('window').width - 40}
-                        height={220}
-                        yAxisSuffix=""
-                        chartConfig={{
-                            backgroundColor: '#e8e8e8',
-                            backgroundGradientFrom: '#fff',
-                            backgroundGradientTo: '#fff',
-                            decimalPlaces: 1,
-                            color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                            labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                        }}
-                        bezier
-                        style={styles.chart}
-                    />
-                )}
             </ScrollView>
 
             <Portal>
@@ -254,71 +279,59 @@ const App: React.FC = () => {
                     locale="ru"
                     mode="single"
                     visible={showDatePicker}
-                    onDismiss={onDismissDate}
+                    onDismiss={() => setShowDatePicker(false)}
                     date={selectedDate}
                     onConfirm={(params) => {
-                        if ('date' in params) {
+                        if (params.date) {
                             setSelectedDate(params.date);
                         }
                         setShowDatePicker(false);
                     }}
                 />
             </Portal>
+
+            {snackbarVisible && (
+                <Snackbar visible={true} onDismiss={hideSnackbar} duration={3000} wrapperStyle={styles.snackbarWrapper}>
+                    {errorMessage}
+                </Snackbar>
+            )}
         </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: '#FFF',
+    safeArea: {flex: 1, backgroundColor: '#FFF', marginBottom: TABS_HEIGHT},
+    container: {flexGrow: 1, paddingHorizontal: 20, paddingVertical: 20},
+    title: {fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20},
+    input: {marginBottom: 10},
+    buttonContainer: {flexDirection: 'row', justifyContent: 'space-between', marginTop: 20},
+    calculateButton: {flex: 0.48, backgroundColor: '#5885DC'},
+    clearButton: {flex: 0.48, backgroundColor: '#BB2649'},
+    resultText: {fontSize: 18, fontWeight: 'bold', textAlign: 'center', marginTop: 20},
+    chart: {marginVertical: 10, borderRadius: 10},
+    snackbarWrapper: {
+        top: 50,
+        position: 'absolute',
     },
-    container: {
-        flexGrow: 1,
-        paddingHorizontal: 20,
-        paddingVertical: 20,
+    disabledButton: {
+        opacity: 0.5,
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 20,
-    },
-    input: {
-        marginBottom: 10,
-    },
-    buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 20,
-    },
-    calculateButton: {
-        flex: 0.48,
-        backgroundColor: '#5885DC',
-    },
-    clearButton: {
-        flex: 0.48,
-        backgroundColor: '#BB2649',
-    },
-    resultText: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginTop: 20,
+    buttonText: {
+        color: '#FFF',
     },
     dateButton: {
-        marginVertical: 10,
+        borderRadius: 5,
+        backgroundColor: '#f5f5f5',
     },
-    historyTitle: {
-        marginTop: 30,
-        fontSize: 18,
-        fontWeight: 'bold',
-        textAlign: 'center',
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
-    chart: {
-        marginVertical: 10,
-        borderRadius: 10,
+    dateText: {
+        fontSize: 16,
+        color: '#333',
     },
 });
 
-export default App;
+export default HomeScreen;
