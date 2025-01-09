@@ -1,4 +1,4 @@
-openapi: "3.0.0"
+openapi: '3.0.0'
 info:
   version: 1.0.0
   title: SDAI calculator API server
@@ -11,7 +11,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CalculateRequest"
+              $ref: '#/components/schemas/CalculateRequest'
       responses:
         '200':
           $ref: '#/components/responses/CalculateResponse'
@@ -31,6 +31,19 @@ components:
   schemas:
     CalculateRequest:
       type: object
+      required:
+        - parameters
+        - measure_datetime
+      properties:
+        parameters:
+          $ref: '#/components/schemas/CalculationParameters'
+        measure_datetime:
+          format: date-time
+          description: Measure date and time
+          example: '2021-01-30T08:30:00Z'
+
+    CalculationParameters:
+      type: object
       additionalProperties: false
       required:
         - painful_joints
@@ -38,7 +51,6 @@ components:
         - physician_activity_assessment
         - patient_activity_assessment
         - crp
-        - measure_datetime
       properties:
         painful_joints:
           type: integer
@@ -67,11 +79,6 @@ components:
           maximum: 100
           example: 1.2
           description: C-reactive protein in mg/dl
-        measure_datetime:
-          type: string
-          format: date-time
-          description: Measure date and time
-          example: "2021-01-30T08:30:00Z"
 
     Error:
       type: object
@@ -84,12 +91,12 @@ components:
         message:
           type: string
 
-    SDAIRecord:
+    HistoryRecord:
       type: object
-      additionalProperties: false
       required:
         - sdai_index
         - measure_datetime
+        - parameters
       properties:
         sdai_index:
           type: number
@@ -97,6 +104,8 @@ components:
         measure_datetime:
           type: string
           format: date-time
+        parameters:
+          $ref: '#/components/schemas/CalculationParameters'
 
   responses:
     CalculateErrorResponse:
@@ -128,7 +137,6 @@ components:
                 format: double
                 description: Calculated SDAI index
 
-    # todo: pagination: limit offset, cursor?
     GetHistoryResponse:
       description: Success
       content:
@@ -142,13 +150,15 @@ components:
               history:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SDAIRecord'
+                  $ref: '#/components/schemas/HistoryRecord'
 
   parameters:
     IdempotencyToken:
       name: X-Idempotency-Token
       in: header
       required: true
-      example: "6263759d-261b-499f-8699-77f07ca825fa"
+      example: '6263759d-261b-499f-8699-77f07ca825fa'
       schema:
         type: string
+
+#    todo: return calc data in history route

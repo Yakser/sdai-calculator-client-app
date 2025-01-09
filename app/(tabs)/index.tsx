@@ -51,9 +51,7 @@ const HomeScreen: React.FC = () => {
     const [physicianAssessment, setPhysicianAssessment] = useState<string>(isDevelopment ? '50' : '');
     const [patientAssessment, setPatientAssessment] = useState<string>(isDevelopment ? '40' : '');
     const [crp, setCrp] = useState<string>(isDevelopment ? '3.5' : '');
-    const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-        isDevelopment ? new Date() : undefined
-    );
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
     const [sdai, setSdai] = useState<number | null>(null);
     const [interpretation, setInterpretation] = useState<string>('');
@@ -69,7 +67,7 @@ const HomeScreen: React.FC = () => {
         setSdai(null);
         setInterpretation('');
         setErrors({});
-        setSelectedDate(undefined);
+        setSelectedDate(new Date());
     };
 
     const validateInput = () => {
@@ -104,17 +102,18 @@ const HomeScreen: React.FC = () => {
         setLoading(true);
 
         const calculateRequest: CalculateRequest = {
-            crp: Number(crp),
-            painful_joints: Number(tenderJoints),
-            swollen_joints: Number(swollenJoints),
-            patient_activity_assessment: Number(patientAssessment),
-            physician_activity_assessment: Number(physicianAssessment),
+            parameters: {
+                crp: Number(crp),
+                painful_joints: Number(tenderJoints),
+                swollen_joints: Number(swollenJoints),
+                patient_activity_assessment: Number(patientAssessment),
+                physician_activity_assessment: Number(physicianAssessment),
+            },
             measure_datetime: selectedDate!.toISOString(),
         };
 
         try {
             const response = await api.calculate(calculateRequest);
-
             const calculatedSDAI = response.data.sdai_index;
 
             setSdai(calculatedSDAI);

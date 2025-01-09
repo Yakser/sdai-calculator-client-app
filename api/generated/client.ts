@@ -10,7 +10,7 @@ import type {
   AxiosResponse
 } from 'axios'
 export type GetHistoryResponseResponse = {
-  history: SDAIRecord[];
+  history: HistoryRecord[];
 };
 
 export type CalculateResponseResponse = {
@@ -28,8 +28,9 @@ export type GetHistoryErrorResponseResponse = Error;
  */
 export type CalculateErrorResponseResponse = Error;
 
-export interface SDAIRecord {
+export interface HistoryRecord {
   measure_datetime: string;
+  parameters: CalculationParameters;
   sdai_index: number;
 }
 
@@ -38,15 +39,13 @@ export interface Error {
   message: string;
 }
 
-export interface CalculateRequest {
+export interface CalculationParameters {
   /**
    * C-reactive protein in mg/dl
    * @minimum 0
    * @maximum 100
    */
   crp: number;
-  /** Measure date and time */
-  measure_datetime: string;
   /**
    * @minimum 0
    * @maximum 28
@@ -67,6 +66,12 @@ export interface CalculateRequest {
    * @maximum 28
    */
   swollen_joints: number;
+}
+
+export interface CalculateRequest {
+  /** Measure date and time */
+  measure_datetime: unknown;
+  parameters: CalculationParameters;
 }
 
 
