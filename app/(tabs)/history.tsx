@@ -210,6 +210,7 @@ const ChartTab: React.FC = () => {
                 <Button mode="contained" onPress={loadHistory} style={styles.refreshButton} disabled={loading}>
                     Обновить данные
                 </Button>
+
                 {dataHistory.length > 0 && renderContent()}
                 {dataHistory.length > 0 && renderTable()}
             </ScrollView>

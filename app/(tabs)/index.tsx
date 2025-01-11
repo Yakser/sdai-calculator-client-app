@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import {StyleSheet, View, ScrollView, SafeAreaView, Dimensions, Alert} from 'react-native';
 import {TextInput, Button, HelperText, Text, Portal, ActivityIndicator, Snackbar, IconButton} from 'react-native-paper';
 import {DatePickerModal, registerTranslation} from 'react-native-paper-dates';
-import {getSDAICalculatorAPIServer, CalculateRequest} from '@/api/generated/client';
+import {getSDAICalculatorAPIServer, CalculateRequest, Error} from '@/api/generated/client';
 
 const TABS_HEIGHT = 83;
 
@@ -96,6 +96,24 @@ const HomeScreen: React.FC = () => {
         return Object.keys(newErrors).length === 0;
     };
 
+    const interpretResults = (calculatedSDAI: number) => {
+        if (calculatedSDAI < 3.3) {
+            setInterpretation('Ремиссия')
+            return
+        }
+
+        if (calculatedSDAI <= 11) {
+            setInterpretation('Низкая активность заболевания')
+            return
+        }
+        if (calculatedSDAI <= 26) {
+            setInterpretation('Умеренная активность заболевания')
+            return
+        }
+
+        setInterpretation('Высокая активность заболевания');
+    }
+
     const calculateSDAI = async () => {
         if (!validateInput()) return;
 
@@ -114,25 +132,15 @@ const HomeScreen: React.FC = () => {
 
         try {
             const response = await api.calculate(calculateRequest);
-            const calculatedSDAI = response.data.sdai_index;
 
-            setSdai(calculatedSDAI);
-
-            let activeness = '';
-            if (calculatedSDAI < 3.3) {
-                activeness = 'Ремиссия';
-            } else if (calculatedSDAI <= 11) {
-                activeness = 'Низкая активность заболевания';
-            } else if (calculatedSDAI <= 26) {
-                activeness = 'Умеренная активность заболевания';
-            } else {
-                activeness = 'Высокая активность заболевания';
-            }
-            setInterpretation(activeness);
+            setSdai(response.data.sdai_index);
+            interpretResults(response.data.sdai_index);
         } catch (error: any) {
             console.error(error)
+
             if (error.response && error.response.data) {
-                const apiError = error.response.data as { message: string };
+                const apiError = error.response.data as Error;
+
                 showSnackbar(apiError.message || 'Произошла ошибка на сервере');
             } else {
                 showSnackbar('Не удалось связаться с сервером. Проверьте подключение.');
@@ -239,7 +247,7 @@ const HomeScreen: React.FC = () => {
                         <IconButton
                             icon="calendar"
                             size={20}
-                            style={{ margin: 0 }}
+                            style={{margin: 0}}
                         />
                     </View>
                 </Button>
