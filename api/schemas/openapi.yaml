@@ -160,5 +160,4 @@ components:
       example: '6263759d-261b-499f-8699-77f07ca825fa'
       schema:
         type: string
-
 #    todo: return calc data in history route
