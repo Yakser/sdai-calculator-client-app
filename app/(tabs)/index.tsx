@@ -1,5 +1,11 @@
 import React, { useState } from 'react'
-import { StyleSheet, View, ScrollView, SafeAreaView } from 'react-native'
+import {
+  StyleSheet,
+  View,
+  ScrollView,
+  SafeAreaView,
+  Platform,
+} from 'react-native'
 import {
   TextInput,
   Button,
@@ -18,7 +24,10 @@ import {
 import SDAIResult from '@/components/SDAIResult'
 import SnackbarErrorMessage from '@/components/SnackbarErrorMessage'
 
-const TABS_HEIGHT = 83
+const TABS_HEIGHT = Platform.select({
+  ios: 83,
+  android: 0,
+})
 
 const formatDate = (date: Date): string => {
   return new Intl.DateTimeFormat('ru-RU', {

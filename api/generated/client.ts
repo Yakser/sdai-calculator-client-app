@@ -24,7 +24,7 @@ export type GetHistoryErrorResponseResponse = Error
 /**
  * Error
  */
-export type CalculateErrorResponseResponse = Error
+export type CalculateInternalErrorResponseResponse = Error
 
 export interface HistoryRecord {
   measure_datetime: string
@@ -78,7 +78,7 @@ export const getSDAICalculatorAPIServer = () => {
     options?: AxiosRequestConfig,
   ): Promise<TData> => {
     return axios.post(
-      'http://localhost:8080/calculate',
+      `http://10.0.2.2:8080/calculate`,
       calculateRequest,
       options,
     )
@@ -87,7 +87,7 @@ export const getSDAICalculatorAPIServer = () => {
   const getHistory = <TData = AxiosResponse<GetHistoryResponseResponse>>(
     options?: AxiosRequestConfig,
   ): Promise<TData> => {
-    return axios.get('http://localhost:8080/history', options)
+    return axios.get(`http://10.0.2.2:8080/history`, options)
   }
 
   return { calculate, getHistory }

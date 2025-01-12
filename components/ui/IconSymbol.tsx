@@ -10,6 +10,7 @@ const MAPPING = {
   // See MaterialIcons here: https://icons.expo.fyi
   // See SF Symbols in the SF Symbols app on Mac.
   'house.fill': 'home',
+  'chart.dots.scatter': 'show-chart',
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
@@ -44,7 +45,7 @@ export function IconSymbol({
       color={color}
       size={size}
       name={MAPPING[name]}
-      style={style}
+      // style={style}
     />
   )
 }
