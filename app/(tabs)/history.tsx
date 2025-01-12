@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   },
 })
 
-const ChartTab: React.FC = () => {
+const HistoryScreen: React.FC = () => {
   const api = getSDAICalculatorAPIServer()
 
   const [loading, setLoading] = useState<boolean>(true)
@@ -103,7 +103,6 @@ const ChartTab: React.FC = () => {
       setError(null)
       const response = await api.getHistory()
 
-      // fixme: на бэке нужно сделать сортировку по дате
       setDataHistory(response.data.history.reverse())
     } catch (err) {
       console.error('Ошибка загрузки данных истории:', err)
@@ -345,4 +344,4 @@ const ChartTab: React.FC = () => {
   )
 }
 
-export default ChartTab
+export default HistoryScreen
