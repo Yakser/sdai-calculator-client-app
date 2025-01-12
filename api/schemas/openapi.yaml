@@ -15,8 +15,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/CalculateResponse'
-        '400':
-          $ref: '#/components/responses/CalculateErrorResponse'
+        '500':
+          $ref: '#/components/responses/CalculateInternalErrorResponse'
 
   /history:
     get:
@@ -108,7 +108,7 @@ components:
           $ref: '#/components/schemas/CalculationParameters'
 
   responses:
-    CalculateErrorResponse:
+    CalculateInternalErrorResponse:
       description: Error
       content:
         application/json:
@@ -160,4 +160,3 @@ components:
       example: '6263759d-261b-499f-8699-77f07ca825fa'
       schema:
         type: string
-#    todo: return calc data in history route

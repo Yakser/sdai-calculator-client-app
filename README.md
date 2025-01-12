@@ -21,3 +21,5 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    ```bash
     npx expo start
    ```
+
+For Android emulator in orval.config.js set `baseUrl: 'http://10.0.2.2:8080'`

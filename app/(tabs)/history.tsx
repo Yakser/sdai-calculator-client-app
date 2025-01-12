@@ -4,7 +4,13 @@ import {
   HistoryRecord,
 } from '@/api/generated/client'
 import { ActivityIndicator, Text, Button, TextInput } from 'react-native-paper'
-import { Dimensions, ScrollView, StyleSheet, View } from 'react-native'
+import {
+  Dimensions,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { LineChart } from 'react-native-chart-kit'
 import { useFocusEffect } from '@react-navigation/native'
@@ -18,10 +24,12 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
     flex: 1,
-    marginBottom: 83,
+    marginBottom: Platform.select({
+      ios: 83,
+      android: 0,
+    }),
   },
   contentContainer: {
-    // flex: 1,
     alignItems: 'center',
     marginTop: 20,
   },
@@ -40,7 +48,6 @@ const styles = StyleSheet.create({
     padding: 0,
     textAlign: 'center',
     width: 70,
-    // marginHorizontal: 10,
   },
   paginationContainer: {
     alignItems: 'center',
@@ -87,15 +94,15 @@ const styles = StyleSheet.create({
   },
 })
 
-const ChartTab: React.FC = () => {
+const HistoryScreen: React.FC = () => {
   const api = getSDAICalculatorAPIServer()
 
   const [loading, setLoading] = useState<boolean>(true)
   const [dataHistory, setDataHistory] = useState<HistoryRecord[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  const [currentPage, setCurrentPage] = useState<number>(0) // Текущая страница
-  const [selectedPage, setSelectedPage] = useState<string>('1') // Значение из поля ввода номера страницы
+  const [currentPage, setCurrentPage] = useState<number>(0)
+  const [selectedPage, setSelectedPage] = useState<string>('1')
 
   const loadHistory = async () => {
     try {
@@ -103,7 +110,6 @@ const ChartTab: React.FC = () => {
       setError(null)
       const response = await api.getHistory()
 
-      // fixme: на бэке нужно сделать сортировку по дате
       setDataHistory(response.data.history.reverse())
     } catch (err) {
       console.error('Ошибка загрузки данных истории:', err)
@@ -119,30 +125,26 @@ const ChartTab: React.FC = () => {
     }, []),
   )
 
-  // Получение данных текущей страницы
   const getPaginatedData = () => {
     const startIndex = currentPage * ITEMS_PER_PAGE
     const endIndex = startIndex + ITEMS_PER_PAGE
     return dataHistory.slice(startIndex, endIndex)
   }
 
-  // Переключение на следующую страницу
   const handleNextPage = () => {
     if ((currentPage + 1) * ITEMS_PER_PAGE < dataHistory.length) {
       setCurrentPage(prev => prev + 1)
-      setSelectedPage((currentPage + 2).toString()) // Обновляем поле номера страницы
+      setSelectedPage((currentPage + 2).toString())
     }
   }
 
-  // Переключение на предыдущую страницу
   const handlePreviousPage = () => {
     if (currentPage > 0) {
       setCurrentPage(prev => prev - 1)
-      setSelectedPage(currentPage.toString()) // Обновляем поле номера страницы
+      setSelectedPage(currentPage.toString())
     }
   }
 
-  // Изменение текущей страницы через поле ввода
   const handlePageInputChange = (text: string) => {
     const pageNumber = parseInt(text, 10)
 
@@ -156,20 +158,18 @@ const ChartTab: React.FC = () => {
       )
     } else {
       setError(null)
-      setCurrentPage(pageNumber - 1) // Переход на указанную страницу (индекс массива 0-based)
+      setCurrentPage(pageNumber - 1)
     }
 
-    setSelectedPage(text) // Обновляем значение в поле
+    setSelectedPage(text)
   }
 
-  // Пагинация для графика
   const getPaginatedGraphData = () => {
-    return getPaginatedData() // Используем данные текущей страницы для графика
+    return getPaginatedData()
   }
 
-  const renderContent = () => {
+  const renderChart = () => {
     if (loading) {
-      // Отображение индикатора загрузки
       return (
         <View style={styles.contentContainer}>
           <ActivityIndicator size="large" color="#4682B4" />
@@ -207,7 +207,6 @@ const ChartTab: React.FC = () => {
 
     const graphData = paginatedGraphData.map(entry => entry.sdai_index)
 
-    // График
     return (
       <LineChart
         fromZero
@@ -338,11 +337,11 @@ const ChartTab: React.FC = () => {
           <Text style={styles.buttonText}>Обновить данные</Text>
         </Button>
 
-        {dataHistory.length > 0 && renderContent()}
+        {dataHistory.length > 0 && renderChart()}
         {dataHistory.length > 0 && renderTable()}
       </ScrollView>
     </SafeAreaView>
   )
 }
 
-export default ChartTab
+export default HistoryScreen
