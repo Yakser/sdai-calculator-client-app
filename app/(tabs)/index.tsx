@@ -7,7 +7,6 @@ import {
   Text,
   Portal,
   ActivityIndicator,
-  Snackbar,
   IconButton,
 } from 'react-native-paper'
 import { DatePickerModal, registerTranslation } from 'react-native-paper-dates'
@@ -16,8 +15,18 @@ import {
   CalculateRequest,
   Error,
 } from '@/api/generated/client'
+import SDAIResult from '@/components/SDAIResult'
+import SnackbarErrorMessage from '@/components/SnackbarErrorMessage'
 
 const TABS_HEIGHT = 83
+
+const formatDate = (date: Date): string => {
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date)
+}
 
 const styles = StyleSheet.create({
   buttonContainer: {
@@ -43,22 +52,12 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   input: { marginBottom: 10 },
-  resultText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 20,
-    textAlign: 'center',
-  },
   row: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   safeArea: { backgroundColor: '#FFF', flex: 1, marginBottom: TABS_HEIGHT },
-  snackbarWrapper: {
-    position: 'absolute',
-    top: 50,
-  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -123,7 +122,6 @@ const HomeScreen: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
 
   const [sdai, setSdai] = useState<number | null>(null)
-  const [interpretation, setInterpretation] = useState<string>('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showDatePicker, setShowDatePicker] = useState(false)
 
@@ -134,7 +132,6 @@ const HomeScreen: React.FC = () => {
     setPatientAssessment('')
     setCrp('')
     setSdai(null)
-    setInterpretation('')
     setErrors({})
     setSelectedDate(new Date())
   }
@@ -185,24 +182,6 @@ const HomeScreen: React.FC = () => {
     return Object.keys(newErrors).length === 0
   }
 
-  const interpretResults = (calculatedSDAI: number) => {
-    if (calculatedSDAI < 3.3) {
-      setInterpretation('Ремиссия')
-      return
-    }
-
-    if (calculatedSDAI <= 11) {
-      setInterpretation('Низкая активность заболевания')
-      return
-    }
-    if (calculatedSDAI <= 26) {
-      setInterpretation('Умеренная активность заболевания')
-      return
-    }
-
-    setInterpretation('Высокая активность заболевания')
-  }
-
   const calculateSDAI = async () => {
     if (!validateInput()) return
 
@@ -223,7 +202,6 @@ const HomeScreen: React.FC = () => {
       const response = await api.calculate(calculateRequest)
 
       setSdai(response.data.sdai_index)
-      interpretResults(response.data.sdai_index)
     } catch (error: any) {
       console.error(error)
 
@@ -241,14 +219,6 @@ const HomeScreen: React.FC = () => {
 
   const hideSnackbar = () => {
     setSnackbarVisible(false)
-  }
-
-  const formatDate = (date: Date): string => {
-    return new Intl.DateTimeFormat('ru-RU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    }).format(date)
   }
 
   const isCalculateDisabled =
@@ -373,14 +343,7 @@ const HomeScreen: React.FC = () => {
           </Button>
         </View>
 
-        {sdai !== null && (
-          <>
-            <Text style={styles.resultText}>
-              Результат SDAI: {sdai.toFixed(1)}
-            </Text>
-            <Text style={styles.resultText}>Активность: {interpretation}</Text>
-          </>
-        )}
+        {sdai !== null && <SDAIResult sdai={sdai} />}
       </ScrollView>
 
       <Portal>
@@ -399,16 +362,9 @@ const HomeScreen: React.FC = () => {
         />
       </Portal>
 
-      {snackbarVisible && (
-        <Snackbar
-          visible={true}
-          onDismiss={hideSnackbar}
-          duration={3000}
-          wrapperStyle={styles.snackbarWrapper}
-        >
-          {errorMessage}
-        </Snackbar>
-      )}
+      <SnackbarErrorMessage visible={snackbarVisible} onDismiss={hideSnackbar}>
+        {errorMessage}
+      </SnackbarErrorMessage>
     </SafeAreaView>
   )
 }
