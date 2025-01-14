@@ -20,7 +20,7 @@ import {
   getSDAICalculatorAPIServer,
   CalculateRequest,
   Error,
-} from '@/api/generated/client'
+} from '@/api/generated/calculator_client'
 import SDAIResult from '@/components/SDAIResult'
 import SnackbarErrorMessage from '@/components/SnackbarErrorMessage'
 

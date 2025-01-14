@@ -1,0 +1,30 @@
+openapi: 3.0.3
+info:
+  title: Mock API для статей о SDAI индексе
+  description: Этот API возвращает список статей об индексе SDAI в формате JSON.
+  version: 1.0.0
+paths:
+  /articles:
+    get:
+      summary: Получить список статей
+      description: Возвращает список заранее подготовленных статей в формате JSON.
+      responses:
+        '200':
+          description: Успешный ответ с массивом статей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Article'
+
+components:
+  schemas:
+    Article:
+      type: object
+      properties:
+        title:
+          type: string
+          example: Что такое SDAI индекс?
+        content:
+          type: string

@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react'
 import {
   getSDAICalculatorAPIServer,
   HistoryRecord,
-} from '@/api/generated/client'
+} from '@/api/generated/calculator_client'
 import { ActivityIndicator, Text, Button, TextInput } from 'react-native-paper'
 import {
   Dimensions,
@@ -169,14 +169,6 @@ const HistoryScreen: React.FC = () => {
   }
 
   const renderChart = () => {
-    if (loading) {
-      return (
-        <View style={styles.contentContainer}>
-          <ActivityIndicator size="large" color="#4682B4" />
-        </View>
-      )
-    }
-
     if (error && currentPage === 0 && !dataHistory.length) {
       return (
         <View style={styles.contentContainer}>
@@ -336,7 +328,11 @@ const HistoryScreen: React.FC = () => {
         >
           <Text style={styles.buttonText}>Обновить данные</Text>
         </Button>
-
+        {loading && (
+          <View style={styles.contentContainer}>
+            <ActivityIndicator size="large" color="#4682B4" />
+          </View>
+        )}
         {dataHistory.length > 0 && renderChart()}
         {dataHistory.length > 0 && renderTable()}
       </ScrollView>
