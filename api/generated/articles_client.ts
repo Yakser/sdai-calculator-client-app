@@ -6,31 +6,24 @@
  * OpenAPI spec version: 1.0.0
  */
 import axios from 'axios'
-import type {
-  AxiosRequestConfig,
-  AxiosResponse
-} from 'axios'
+import type { AxiosRequestConfig, AxiosResponse } from 'axios'
+
 export interface Article {
-  content?: string;
-  title?: string;
+  content?: string
+  title?: string
 }
 
-
-
-
-
-  export const getMockAPISDAI = () => {
-/**
- * Возвращает список заранее подготовленных статей в формате JSON.
- * @summary Получить список статей
- */
-const getArticles = <TData = AxiosResponse<Article[]>>(
-     options?: AxiosRequestConfig
- ): Promise<TData> => {
-    return axios.get(
-      `https://d05ef42b24639bc0.mokky.dev/articles`,options
-    );
+export const getMockAPISDAI = () => {
+  /**
+   * Возвращает список заранее подготовленных статей в формате JSON.
+   * @summary Получить список статей
+   */
+  const getArticles = <TData = AxiosResponse<Article[]>>(
+    options?: AxiosRequestConfig,
+  ): Promise<TData> => {
+    return axios.get(`https://d05ef42b24639bc0.mokky.dev/articles`, options)
   }
 
-return {getArticles}};
+  return { getArticles }
+}
 export type GetArticlesResult = AxiosResponse<Article[]>
